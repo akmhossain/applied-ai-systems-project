@@ -24,6 +24,8 @@ class UserProfile:
     Represents a user's taste preferences.
     Required by tests/test_recommender.py
     """
+    favorite_artists: List[str]
+    target_tempo_bpm: float
     favorite_genre: str
     favorite_mood: str
     target_energy: float

@@ -11,7 +11,14 @@ Your goal is to:
 - Evaluate what your system gets right and wrong
 - Reflect on how this mirrors real world AI recommenders
 
-Replace this paragraph with your own summary of what your version does.
+In the real world, companies have two main ways of predicting what a user will want next: collaborative filtering and content-based filtering. Collaborative filetering involves making predictions primarily based on what other users like. On the other hand, content-based filtering only focuses on what the user prefers and the attributes of the content itself. By using user data like genre, mood, tempo, oe user history, the models are able to provide predictions on what the user will like next. Each feature also has a weight attached, based on how important that feature is in making the prediction. In my version of the AI reccomender, I want to prioritize genre, mood, energy, and tempo/bpm. I think these are the most deterministic aspects of a piece, and will provide clearer reccomendations to the user.
+
+These are the attributes that Song and UserProfile will use:
+Song - artist: str, genre: str, mood: str, energy: float, tempo_bpm: float
+UserProfile - favorite_artists: list, avg_tempo: list, favorite_genre: str, favorite_mood: str, target_energy: float
+
+In the How The System Works section, write a short paragraph explaining your understanding of how real-world recommendations work and what your version will prioritize.
+List the specific features your Song and UserProfile objects will use in your simulation.
 
 ---
 
@@ -22,12 +29,21 @@ Explain your design in plain language.
 Some prompts to answer:
 
 - What features does each `Song` use in your system
-  - For example: genre, mood, energy, tempo
+  - It stores the id/title, artist, genre, mood, energy, and bpm of the song
 - What information does your `UserProfile` store
+  - It stores the favorite artists, target bpm, favorite genres, favorite mood, and target_energy
 - How does your `Recommender` compute a score for each song
-- How do you choose which songs to recommend
+  - For each song the reccomender will compute a score in between 0.0 and 1.0. 1.0 means the song is a perfect match. Based on the user's preferences, the reccomender will compute a score. Each feature has a different weight, so some will be weighed more than others. Genre and mood will be weighed twice as much as the other features, which may lead my model to underestimate the other features like energy and tempo. Below is the formula I will implement: 
+  score = (
+    0.3  * (1 if song.genre  == user.preferred_genre  else 0) +
+    0.3   * (1 if song.mood   == user.preferred_mood   else 0) +
+    0.15 * (1 if song.artist == user.preferred_artist else 0) +
+    0.15 * (1 - abs(song.energy - user.preferred_energy)) +
+    0.1  * (1 - abs(norm_tempo(song.tempo_bpm) - norm_tempo(user.preferred_tempo)))
+    )
 
-You can include a simple diagram or bullet list if helpful.
+- How do you choose which songs to recommend
+  I will store the scores of all the songs in a list. Then, the list will be sorted in descending order. The top songs will be the ones that are recommended.
 
 ---
 
