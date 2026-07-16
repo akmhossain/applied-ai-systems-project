@@ -43,7 +43,7 @@ Some prompts to answer:
     )
 
 - How do you choose which songs to recommend
-  I will store the scores of all the songs in a list. Then, the list will be sorted in descending order. The top songs will be the ones that are recommended.
+  - I will store the scores of all the songs in a list. Then, the list will be sorted in descending order. The top songs will be the ones that are recommended.
 
 ---
 
@@ -87,12 +87,39 @@ You can add more tests in `tests/test_recommender.py`.
 Paste a sample of your recommender's output here as a text block so a reader can see what it produces:
 
 ```
-# e.g.:
-# User profile: genre=indie, mood=chill, energy=low
-# Recommendations:
-#   1. ...
-#   2. ...
-#   3. ...
+user_profile = {"genre": "pop", "mood": "happy", "energy": 0.8}
+
+Top Recommendations
+========================================
+
+1. Sunrise City by Neon Echo
+   Score: 0.75
+   Reasons:
+     - Matches your favorite genre 'pop' (+0.30)
+     - Matches your favorite mood 'happy' (+0.30)
+     - Energy (0.82) is close to your target (+0.15)
+
+2. Rooftop Lights by Indigo Parade
+   Score: 0.44
+   Reasons:
+     - Matches your favorite mood 'happy' (+0.30)
+     - Energy (0.76) is close to your target (+0.14)
+
+3. Gym Hero by Max Pulse
+   Score: 0.43
+   Reasons:
+     - Matches your favorite genre 'pop' (+0.30)
+     - Energy (0.93) is close to your target (+0.13)
+
+4. Concrete Throne by Kid Static
+   Score: 0.15
+   Reasons:
+     - Energy (0.8) is close to your target (+0.15)
+
+5. Night Drive Loop by Neon Echo
+   Score: 0.14
+   Reasons:
+     - Energy (0.75) is close to your target (+0.14)
 ```
 
 **Screenshot or video** *(optional)*: <!-- Insert a screenshot or demo video link here -->
