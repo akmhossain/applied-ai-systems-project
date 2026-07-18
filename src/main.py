@@ -9,7 +9,64 @@ You will implement the functions in recommender.py:
 - recommend_songs
 """
 
+import textwrap
+
 from recommender import load_songs, recommend_songs
+
+try:
+    from tabulate import tabulate
+    HAS_TABULATE = True
+except ImportError:
+    HAS_TABULATE = False
+
+
+def _wrap_reasons(explanation: str, width: int = 50) -> str:
+    """Turns a '; '-joined explanation string into one bullet per line, wrapped to width."""
+    lines = []
+    for reason in explanation.split("; "):
+        lines.extend(textwrap.wrap(f"- {reason}", width=width) or [f"- {reason}"])
+    return "\n".join(lines)
+
+
+def print_recommendations_table(recommendations) -> None:
+    """Prints recommendations as a table including rank, title, artist, score, and reasons."""
+    rows = [
+        [rank, song["title"], song["artist"], f"{score:.2f}", _wrap_reasons(explanation)]
+        for rank, (song, score, explanation) in enumerate(recommendations, start=1)
+    ]
+    headers = ["#", "Title", "Artist", "Score", "Reasons"]
+
+    if HAS_TABULATE:
+        print(tabulate(rows, headers=headers, tablefmt="grid"))
+        return
+
+    # Fallback ASCII table when tabulate isn't installed (per-column, per-line max width)
+    col_widths = []
+    for i, header in enumerate(headers):
+        max_len = len(header)
+        for row in rows:
+            for line in str(row[i]).split("\n"):
+                max_len = max(max_len, len(line))
+        col_widths.append(max_len)
+
+    def format_row(cells):
+        cell_lines = [str(cell).split("\n") for cell in cells]
+        height = max(len(lines) for lines in cell_lines)
+        out_lines = []
+        for h in range(height):
+            parts = []
+            for i, lines in enumerate(cell_lines):
+                text = lines[h] if h < len(lines) else ""
+                parts.append(text.ljust(col_widths[i]))
+            out_lines.append(" | ".join(parts))
+        return "\n".join(out_lines)
+
+    separator = "-+-".join("-" * w for w in col_widths)
+    print(format_row(headers))
+    print(separator)
+    for row in rows:
+        print(format_row(row))
+        print(separator)
 
 
 def main() -> None:
@@ -42,12 +99,7 @@ def main() -> None:
 
         print(f"\nTop Recommendations for {prefs}")
         print("=" * 40)
-        for rank, (song, score, explanation) in enumerate(recommendations, start=1):
-            print(f"\n{rank}. {song['title']} by {song['artist']}")
-            print(f"   Score: {score:.2f}")
-            print("   Reasons:")
-            for reason in explanation.split("; "):
-                print(f"     - {reason}")
+        print_recommendations_table(recommendations)
 
 
 if __name__ == "__main__":

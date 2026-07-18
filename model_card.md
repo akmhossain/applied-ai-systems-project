@@ -2,66 +2,40 @@
 
 ## 1. Model Name  
 
-Give your model a short, descriptive name.  
-Example: **VibeFinder 1.0**  
+FindASong-anator 3000
 
 ---
 
 ## 2. Intended Use  
 
-Describe what your recommender is designed to do and who it is for. 
-
-Prompts:  
-
-- What kind of recommendations does it generate  
-- What assumptions does it make about the user  
-- Is this for real users or classroom exploration  
+The model is built for those who have a collection of songs from a variety of genres, moods, or energies. They can use the model to retrieve the song based on a few metrics they can specify. Then the backend formula will calculate the top songs that match what the user inputted. The system assumes that the user prefers genre and mood over any other feature. The model is NOT for anyone trying to discover new songs, as the database is limited and can only be updated by a developer.
 
 ---
 
 ## 3. How the Model Works  
 
-Explain your scoring approach in simple language.  
-
-Prompts:  
-
-- What features of each song are used (genre, energy, mood, etc.)  
-- What user preferences are considered  
-- How does the model turn those into a score  
-- What changes did you make from the starter logic  
-
-Avoid code here. Pretend you are explaining the idea to a friend who does not program.
+For each song the reccomender will compute a score in between 0.0 and 1.0. 1.0 means the song is a perfect match. Based on the user's preferences, the reccomender will compute a score. Each feature has a different weight, so some will be weighed more than others. The features are listed below in terms of how much they influence the decision out of 1.0:
+- Genre: 0.3
+- Mood: 0.3
+- Artist: 0.15
+- Energy: 0.15
+- Tempo: 0.1
 
 ---
 
 ## 4. Data  
 
-Describe the dataset the model uses.  
-
-Prompts:  
-
-- How many songs are in the catalog  
-- What genres or moods are represented  
-- Did you add or remove data  
-- Are there parts of musical taste missing in the dataset  
+There are 18 songs in `songs.csv`, that cover a veriety of different features. All features are being used except valence, acousticness, and dancability. The various genres in the dataset include pop, lofi, rock, chill, jazz, synthwave,  indiepop, hiphop, folk, and country. The max temp is less than 200 and the max energy is less than 1.00. Some other features that would be useful to have is the popularity(likes), release date/year, and duration of the song.
 
 ---
 
 ## 5. Strengths  
 
-Where does your system seem to work well  
-
-Prompts:  
-
-- User types for which it gives reasonable results  
-- Any patterns you think your scoring captures correctly  
-- Cases where the recommendations matched your intuition  
+The model performs best for users who have a clear genre and mood preference that matches how songs are tagged in the dataset, since those two features together make up 60% of the score and reliably surface the right song first.  The scoring also captures energy and tempo closeness well when genre/mood don't fully match, gracefully falling back to the songs with the nearest energy level rather than returning nothing. Profiles with multiple aligned user preferences (genre, mood, and a realistic energy/tempo target) consistently match the inputs, so the model has no issues in these scenarios.
 
 ---
 
 ## 6. Limitations and Bias 
-
-Where the system struggles or behaves unfairly. 
 
 The recommendation system is unfair when a user wants to find a song using any metric other than genre and mood. Since they carry the most weight and there isn't any additional logic to fallback on other features like energy, the model performs poorly when the user profile does not specify a mood/genre inside songs.csv. The user is also able to input energy levels and bpm that exceed the cap, which is a another limitation of the system. Overall, in the next iteration of the program, I want a more dynamic score calculation (one that falls back on other features if mood/genre match is not found), and also introduce gaurd rails for input edge cases.
 
@@ -69,13 +43,9 @@ The recommendation system is unfair when a user wants to find a song using any m
 
 ## 7. Evaluation  
 
-How you checked whether the recommender behaved as expected. 
-
 For the most part, the model behaved as I expected. Since the formula was not too complicated, I understood almost all the outputs. It made sense that most of the first reccomendations in each of the user profiles was influenced heavily by mood and genre. I was expecting to run into this issue, so I have made example profiles where the genre/mood conflicts with the rest of the features. However, I was not anticipating the user entering a numerical value that exceeds the cap for some features. Also, there were profiles that used "not-a-genre" (basically blank), which was a unexpected edge case I haven't thought about.
 
-No need for numeric metrics unless you created some.
-
-Example profiles tested (11)
+Example profiles tested below (11)
 
 ```
 Top Recommendations for {'genre': 'rock', 'mood': 'angry', 'energy': 0.9}
@@ -421,23 +391,10 @@ Top Recommendations for {'genre': 'xyz-not-a-genre', 'mood': 'not-a-mood', 'ener
 
 ## 8. Future Work  
 
-Ideas for how you would improve the model next.  
-
-Prompts:  
-
-- Additional features or preferences  
-- Better ways to explain recommendations  
-- Improving diversity among the top results  
-- Handling more complex user tastes  
+In the future, I would like the model to handle the edge cases mentioned in section 7. I would also like to make the model dynamic, adding an option for the user to rank the features they value the most, and adjusting the formula accordingly each time. This way every user is satisfied with their reccomendations, instead of being stuck to one reccomendation system.
 
 ---
 
 ## 9. Personal Reflection  
 
-A few sentences about your experience.  
-
-Prompts:  
-
-- What you learned about recommender systems  
-- Something unexpected or interesting you discovered  
-- How this changed the way you think about music recommendation apps  
+I learned that reccomendation systems are not as obscure and complex as I expected. The system itself is just based on simple logic that can be iteratively built upon to improve the reccomandations. Right now, my model in this project is very simple but it is possible to come up with ideas/logic that allows the model to become more personalized to the user, consequently improving reccomendations. I found the database to be interesting, because it had a variety of niche genres, which led me into a loophole trying to find even more niche genres. (6000+ genres on spotify, must have a large collective database!)
