@@ -9,15 +9,18 @@ flowchart TD
     end
 
     subgraph "MaestroMix Chatbot RAG (src/app.py + src/rag.py)"
+        SB[[Sidebar: Chat Threads\nephemeral, session-only, per-thread history]]
         M[User Uploaded Song File\nany CSV with a title-ish column]
+        FP[Feature Preview\ndetected columns shown with emojis\ncapped at 6]
+        K[Result Count Slider\nuser-adjustable k, 1-10]
         N[Mood Sentence\nfree-text chat input]
-        S{Guardrail\nis_gibberish}
+        S{Guardrail\nis_gibberish:\nmin length, no-vowel words,\nrepeated chars, vowel ratio}
         S2[[Decline to Answer\nask user to rephrase]]
         O[Parser\nparse_uploaded_songs]
         P[Retriever\nlocal semantic embeddings\nsentence-transformers + cosine similarity]
         Q[Top-k Matching Songs\nranked by similarity score]
-        W[Explainer\nexplain_match\nkeyword overlap or overall vibe]
-        R[Chat Reply\nmarkdown table: Title, fields, Why\nStreamlit chat_message]
+        W[Explainer\nexplain_match:\nper-field embedding similarity\nvs. query]
+        R[Chat Reply\nmarkdown table: Title, features, Why\nemojis, Streamlit chat_message]
     end
 
     subgraph "Human & Test Checkpoints"
@@ -34,8 +37,12 @@ flowchart TD
     D -.validated by.-> G
     H -->|feedback| D
 
+    SB --> N
     M --> O
     O --> P
+    O --> FP
+    FP --> N
+    K --> P
     N --> S
     S -->|nonsense input| S2
     S2 --> H

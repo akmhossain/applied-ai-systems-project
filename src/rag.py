@@ -12,12 +12,42 @@ import re
 from functools import lru_cache
 from typing import Dict, List, Tuple
 
+import numpy as np
 import pandas as pd
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
+FIELD_MATCH_THRESHOLD = 0.15
+
 TITLE_COLUMN_PATTERN = re.compile(r"title|name|song", re.IGNORECASE)
+IGNORED_EXPLANATION_COLUMNS = re.compile(r"^(id|index|idx|row)$", re.IGNORECASE)
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
+
+
+FEATURE_EMOJIS = {
+    "genre": "🎼",
+    "mood": "😊",
+    "energy": "⚡",
+    "tempo": "🥁",
+    "bpm": "🥁",
+    "valence": "🌈",
+    "dance": "💃",
+    "acoustic": "🎸",
+    "artist": "🕺🏾",
+    "year": "📅",
+    "duration": "⏱️",
+    "length": "⏱️",
+}
+DEFAULT_FEATURE_EMOJI = "✨"
+
+
+def feature_emoji(column: str) -> str:
+    """Best-effort emoji for a feature column name, falling back to a default."""
+    lower = column.lower()
+    for keyword, emoji in FEATURE_EMOJIS.items():
+        if keyword in lower:
+            return emoji
+    return DEFAULT_FEATURE_EMOJI
 
 
 def _find_title_column(columns: List[str]) -> str:
@@ -73,15 +103,25 @@ def retrieve(query: str, matrix, songs: List[Dict], k: int = 5) -> List[Tuple[Di
     return [(songs[i], float(similarities[i])) for i in ranked_indices]
 
 
+VOWEL_RATIO_THRESHOLD = 0.25
+VOWEL_RATIO_MIN_WORDS = 3
+MIN_QUERY_LENGTH = 3
+
+
 def is_gibberish(query: str) -> bool:
     """
-    Heuristic check for nonsense input (keyboard mashing, random strings)
-    so the chatbot can decline to answer instead of guessing. Flags a query
-    as gibberish if it has no alphabetic content, or if most of its words
-    are long strings of consonants with no vowels.
+    Heuristic check for nonsense input (keyboard mashing, random strings,
+    too-short input) so the chatbot can decline to answer instead of
+    guessing. Flags a query as gibberish if it has no alphabetic content,
+    is too short to describe a mood meaningfully, if most of its words are
+    long strings of consonants with no vowels, or (for phrases of 3+ words)
+    if the overall vowel ratio is too low for real English text.
     """
     words = re.findall(r"[a-zA-Z]+", query)
     if not words:
+        return True
+
+    if len(query.strip()) < MIN_QUERY_LENGTH:
         return True
 
     def is_suspicious(word: str) -> bool:
@@ -91,27 +131,62 @@ def is_gibberish(query: str) -> bool:
         return no_vowels or repeated_char
 
     suspicious = sum(1 for word in words if is_suspicious(word))
-    return suspicious / len(words) > 0.5
+    if suspicious / len(words) > 0.5:
+        return True
+
+    if len(words) >= VOWEL_RATIO_MIN_WORDS:
+        letters = "".join(words).lower()
+        vowel_ratio = sum(1 for char in letters if char in "aeiouy") / len(letters)
+        if vowel_ratio < VOWEL_RATIO_THRESHOLD:
+            return True
+
+    return False
+
+
+def _field_embeddings(song: Dict) -> Dict[str, np.ndarray]:
+    """Lazily embeds and caches each of a song's individual field values."""
+    if "field_embeddings" not in song:
+        fields = {
+            column: str(value)
+            for column, value in song["raw"].items()
+            if column != "title"
+            and not IGNORED_EXPLANATION_COLUMNS.match(column)
+            and pd.notna(value)
+        }
+        if fields:
+            model = _get_model()
+            embeddings = model.encode(list(fields.values()))
+            song["field_embeddings"] = dict(zip(fields.keys(), embeddings))
+        else:
+            song["field_embeddings"] = {}
+    return song["field_embeddings"]
 
 
 def explain_match(query: str, song: Dict) -> str:
     """
-    Best-effort explanation of why a song matched. Since matching is based on
-    semantic embeddings (not literal keywords), this looks for any of the
-    song's own field values that literally overlap with words in the query;
-    if nothing overlaps, the match was found by overall meaning rather than
-    shared words.
+    Explains why a song matched by comparing the query's embedding against
+    each of the song's individual field embeddings (genre, mood, etc.),
+    citing whichever field(s) are most semantically similar for this
+    specific song/query pair. This reflects the actual embedding-based
+    retrieval signal, so explanations vary per song instead of repeating
+    a generic fallback.
     """
-    query_words = {word for word in re.findall(r"\w+", query.lower()) if len(word) > 2}
+    field_embeds = _field_embeddings(song)
+    if not field_embeds:
+        return "Similar overall vibe to your description"
 
-    overlaps = []
-    for column, value in song["raw"].items():
-        if column == "title" or pd.isna(value):
-            continue
-        value_str = str(value).lower()
-        if any(word in value_str for word in query_words):
-            overlaps.append(f"{column}: {value}")
+    model = _get_model()
+    query_embedding = model.encode([query])
 
-    if overlaps:
-        return "Matches " + ", ".join(overlaps[:2])
-    return "Similar overall vibe to your description"
+    columns = list(field_embeds.keys())
+    field_matrix = np.array([field_embeds[column] for column in columns])
+    similarities = cosine_similarity(query_embedding, field_matrix).flatten()
+
+    ranked = sorted(zip(columns, similarities), key=lambda pair: pair[1], reverse=True)
+    top_fields = [column for column, score in ranked[:2] if score > FIELD_MATCH_THRESHOLD]
+
+    if not top_fields:
+        return "Similar overall vibe to your description"
+
+    parts = [f"{column} ({song['raw'][column]})" for column in top_fields]
+    return "Matched mainly on " + " and ".join(parts)
