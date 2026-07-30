@@ -1,4 +1,6 @@
 pandas
 pytest
+scikit-learn
+sentence-transformers
 streamlit
 tabulate

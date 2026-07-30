@@ -1,0 +1,46 @@
+flowchart TD
+    subgraph "CLI Recommender (src/main.py)"
+        A[User Preferences\ngenre, mood, energy, tempo, artist]
+        B[(data/songs.csv)]
+        C[Retriever\nload_songs]
+        D[Agent / Scorer\nscore_song + recommend_songs]
+        E[Ranked Recommendations\ntop-k songs + explanations]
+        F[CLI Display\nmain.py]
+    end
+
+    subgraph "MaestroMix Chatbot RAG (src/app.py + src/rag.py)"
+        M[User Uploaded Song File\nany CSV with a title-ish column]
+        N[Mood Sentence\nfree-text chat input]
+        S{Guardrail\nis_gibberish}
+        S2[[Decline to Answer\nask user to rephrase]]
+        O[Parser\nparse_uploaded_songs]
+        P[Retriever\nlocal semantic embeddings\nsentence-transformers + cosine similarity]
+        Q[Top-k Matching Songs\nranked by similarity score]
+        W[Explainer\nexplain_match\nkeyword overlap or overall vibe]
+        R[Chat Reply\nmarkdown table: Title, fields, Why\nStreamlit chat_message]
+    end
+
+    subgraph "Human & Test Checkpoints"
+        G{{Unit Tests\ntest_recommender.py}}
+        H([Human Review\ndo reasons/ranking make sense?])
+    end
+
+    B --> C
+    C --> D
+    A --> D
+    D --> E
+    E --> F
+    F --> H
+    D -.validated by.-> G
+    H -->|feedback| D
+
+    M --> O
+    O --> P
+    N --> S
+    S -->|nonsense input| S2
+    S2 --> H
+    S -->|looks valid| P
+    P --> Q
+    Q --> W
+    W --> R
+    R --> H
