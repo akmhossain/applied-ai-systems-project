@@ -1,5 +1,5 @@
 """
-MaestroMix - a chatbot that retrieves songs from a user-uploaded file
+MixMaster - a chatbot that retrieves songs from a user-uploaded file
 based on a free-text mood description.
 """
 
@@ -17,7 +17,7 @@ from rag import (
 
 MAX_DISPLAYED_FEATURES = 6
 
-st.set_page_config(page_title="MaestroMix", page_icon="🎵")
+st.set_page_config(page_title="MixMaster", page_icon="🎵")
 
 st.markdown('<div id="top"></div>', unsafe_allow_html=True)
 st.markdown(
@@ -33,7 +33,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.title("🎵 MaestroMix")
+st.title("🎵 MixMaster")
 st.caption("Upload your playlist, then describe what you want to listen to today. Consider title,artist,genre,mood,energy).")
 
 if "index" not in st.session_state:

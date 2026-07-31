@@ -1,5 +1,5 @@
 """
-Retrieval pipeline for MaestroMix.
+Retrieval pipeline for MixMaster.
 
 Lets a user upload a loosely-formatted CSV of songs and retrieve the
 top matches for a free-text mood query using local semantic embeddings
